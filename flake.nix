@@ -12,8 +12,10 @@
       hsPkgsFor = pkgs:
         pkgs.haskell.packages.${ghcVersion}.override {
           overrides = hself: hsuper:
+            # Test suites need a live Postgres and run in CI via cabal; the
+            # sandboxed nix build only produces the binaries.
             nixpkgs.lib.genAttrs localPackages
-              (name: hself.callCabal2nix name (./. + "/${name}") { });
+              (name: pkgs.haskell.lib.dontCheck (hself.callCabal2nix name (./. + "/${name}") { }));
         };
     in
     {
