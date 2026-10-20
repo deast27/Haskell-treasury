@@ -12,18 +12,17 @@
       hsPkgsFor = pkgs:
         pkgs.haskell.packages.${ghcVersion}.override {
           overrides = hself: hsuper:
-            # Test suites need a live Postgres and run in CI via cabal; the
-            # sandboxed nix build only produces the binaries.
             nixpkgs.lib.genAttrs localPackages
-              (name: pkgs.haskell.lib.dontCheck (hself.callCabal2nix name (./. + "/${name}") { }));
+              (name: hself.callCabal2nix name (./. + "/${name}") { });
         };
     in
     {
       packages = forAllSystems (pkgs:
         let hsPkgs = hsPkgsFor pkgs;
-        in nixpkgs.lib.genAttrs localPackages (name: hsPkgs.${name}) // {
-          default = hsPkgs.treasury-api;
-        });
+          # Test suites need a live Postgres and run in CI via cabal; the
+          # sandboxed nix build only produces the binaries.
+          binaries = nixpkgs.lib.genAttrs localPackages (name: pkgs.haskell.lib.dontCheck hsPkgs.${name});
+        in binaries // { default = binaries.treasury-api; });
 
       devShells = forAllSystems (pkgs:
         let
