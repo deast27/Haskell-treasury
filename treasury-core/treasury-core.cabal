@@ -61,11 +61,15 @@ test-suite spec
     hs-source-dirs: test
     main-is: Spec.hs
     other-modules:
+        Treasury.LedgerSpec
         Treasury.MoneySpec
         Treasury.Payments.StatusSpec
     build-depends:
         base,
+        bytestring,
         hspec,
+        persistent,
         QuickCheck,
         text,
-        treasury-core
+        treasury-core,
+        unliftio

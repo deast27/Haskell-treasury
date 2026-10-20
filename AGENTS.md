@@ -22,9 +22,9 @@ or enter the shell once with `nix develop`.
 
 ```bash
 nix develop                       # GHC 9.10, cabal, ormolu, hlint, ghciwatch, postgres 16
-pg-start                          # local postgres on :5433 (databases: treasury, treasury_test)
+pg-start                          # local postgres on :5433 (databases: treasury, treasury_test, treasury_core_test)
 cabal build all                   # builds every package and test suite (-Wall -Werror)
-cabal test all                    # unit tests + API tests (needs pg-start)
+cabal test all                    # unit tests + ledger properties + API tests (needs pg-start)
 cabal run treasury-api            # :8080
 cabal run mock-partner            # :9400, stand-in for the partner bank
 cabal run treasury-workers -- submit     # or: poll | reconcile, add --once for a single tick
