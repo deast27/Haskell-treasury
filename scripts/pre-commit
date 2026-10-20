@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Formats and lints staged Haskell files. Installed by scripts/install-hooks.
+set -euo pipefail
+files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.hs$' || true)
+[ -z "$files" ] && exit 0
+if ! command -v ormolu >/dev/null; then
+  echo "ormolu not on PATH; run inside 'nix develop'" >&2
+  exit 1
+fi
+ormolu --mode check $files
+hlint $files

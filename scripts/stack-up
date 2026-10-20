@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Builds everything once, then starts postgres, mock-partner, treasury-api and
+# the submit/poll workers in the background. Logs go to .pg/logs/. Run inside
+# `nix develop`. Stop with scripts/stack-down.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+mkdir -p .pg/logs
+pg-start
+cabal build -v0 all
+start() { # name, binary, args...
+  local name=$1; shift
+  nohup "$@" > ".pg/logs/$name.log" 2>&1 &
+  echo $! > ".pg/logs/$name.pid"
+  echo "started $name (pid $!)"
+}
+start mock-partner "$(cabal list-bin mock-partner)"
+start treasury-api "$(cabal list-bin treasury-api)"
+for _ in $(seq 1 30); do curl -sf localhost:8080/health >/dev/null && break; sleep 1; done
+start submit-worker "$(cabal list-bin treasury-workers)" submit
+start poll-worker "$(cabal list-bin treasury-workers)" poll
+curl -s localhost:8080/health; echo
+echo "api :8080  mock-partner :9400  logs in .pg/logs/"

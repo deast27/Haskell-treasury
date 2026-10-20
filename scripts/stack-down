@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -uo pipefail
+cd "$(git rev-parse --show-toplevel)"
+for f in .pg/logs/*.pid; do
+  [ -f "$f" ] || continue
+  kill "$(cat "$f")" 2>/dev/null && echo "stopped $(basename "$f" .pid)"
+  rm -f "$f"
+done
+pg-stop 2>/dev/null || true

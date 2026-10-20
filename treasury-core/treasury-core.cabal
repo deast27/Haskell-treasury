@@ -1,0 +1,71 @@
+cabal-version: 3.0
+name:          treasury-core
+version:       0.1.0.0
+synopsis:      Domain model, ledger and payments logic for treasury
+license:       NONE
+build-type:    Simple
+
+common shared
+    default-language: GHC2021
+    default-extensions:
+        DataKinds
+        DeriveAnyClass
+        DerivingStrategies
+        DuplicateRecordFields
+        LambdaCase
+        MultiWayIf
+        NoFieldSelectors
+        OverloadedRecordDot
+        OverloadedStrings
+        RecordWildCards
+        StrictData
+        TypeFamilies
+    ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wpartial-fields -Wredundant-constraints -Werror
+
+library
+    import: shared
+    hs-source-dirs: src
+    exposed-modules:
+        Treasury.Audit
+        Treasury.Config
+        Treasury.Db
+        Treasury.Errors
+        Treasury.Ledger
+        Treasury.Model
+        Treasury.Money
+        Treasury.Notifications
+        Treasury.Payments
+        Treasury.Payments.Status
+    build-depends:
+        base >=4.18 && <5,
+        aeson,
+        bytestring,
+        containers,
+        esqueleto,
+        exceptions,
+        monad-logger,
+        mtl,
+        persistent,
+        persistent-postgresql,
+        resource-pool,
+        text,
+        time,
+        transformers,
+        unliftio,
+        unliftio-core,
+        uuid
+
+test-suite spec
+    import: shared
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: Spec.hs
+    other-modules:
+        Treasury.MoneySpec
+        Treasury.Payments.StatusSpec
+    build-depends:
+        base,
+        hspec,
+        QuickCheck,
+        text,
+        treasury-core

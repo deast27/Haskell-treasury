@@ -1,0 +1,91 @@
+cabal-version: 3.0
+name:          treasury-api
+version:       0.1.0.0
+synopsis:      Yesod JSON API for treasury
+license:       NONE
+build-type:    Simple
+
+common shared
+    default-language: GHC2021
+    default-extensions:
+        DataKinds
+        DeriveAnyClass
+        DerivingStrategies
+        DuplicateRecordFields
+        LambdaCase
+        MultiWayIf
+        NoFieldSelectors
+        OverloadedRecordDot
+        OverloadedStrings
+        RecordWildCards
+        StrictData
+        TypeFamilies
+    ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wpartial-fields -Wredundant-constraints -Werror
+
+library
+    import: shared
+    hs-source-dirs: src
+    exposed-modules:
+        Treasury.Api.Application
+        Treasury.Api.Foundation
+        Treasury.Api.Handler.Accounts
+        Treasury.Api.Handler.Businesses
+        Treasury.Api.Handler.Health
+        Treasury.Api.Handler.Payments
+    build-depends:
+        base >=4.18 && <5,
+        aeson,
+        bytestring,
+        esqueleto,
+        hs-opentelemetry-instrumentation-wai,
+        hs-opentelemetry-sdk,
+        http-types,
+        monad-logger,
+        persistent,
+        persistent-postgresql,
+        text,
+        time,
+        unliftio,
+        wai,
+        wai-extra,
+        warp,
+        yesod-core,
+        treasury-core,
+        treasury-partner-client
+
+executable treasury-api
+    import: shared
+    hs-source-dirs: app
+    main-is: Main.hs
+    ghc-options: -threaded -rtsopts -with-rtsopts=-N
+    build-depends:
+        base,
+        hs-opentelemetry-sdk,
+        warp,
+        treasury-api,
+        treasury-core
+
+test-suite spec
+    import: shared
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: Spec.hs
+    other-modules:
+        Treasury.Api.PaymentsSpec
+        Treasury.Api.TestSupport
+    build-depends:
+        base,
+        aeson,
+        bytestring,
+        hspec,
+        hspec-wai,
+        http-types,
+        monad-logger,
+        persistent,
+        persistent-postgresql,
+        text,
+        wai,
+        wai-extra,
+        yesod-core,
+        treasury-api,
+        treasury-core

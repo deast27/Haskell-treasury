@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - uses: DeterminateSystems/magic-nix-cache-action@v9
+      - name: Cache cabal store
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/cabal
+            ~/.local/state/cabal
+            dist-newstyle
+          key: cabal-${{ runner.os }}-${{ hashFiles('flake.lock', '**/*.cabal', 'cabal.project') }}
+          restore-keys: cabal-${{ runner.os }}-
+      - name: Format check
+        run: nix develop -c bash -c 'ormolu --mode check $(git ls-files "*.hs")'
+      - name: Lint
+        run: nix develop -c hlint .
+      - name: Build
+        run: nix develop -c cabal build all
+      - name: Start postgres
+        run: nix develop -c pg-start
+      - name: Test
+        run: nix develop -c cabal test all --test-show-details=direct

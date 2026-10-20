@@ -1,0 +1,10 @@
+packages:
+  treasury-core
+  treasury-partner-client
+  treasury-api
+  treasury-workers
+
+tests: True
+
+package *
+  ghc-options: -j4
