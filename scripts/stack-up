@@ -1,10 +1,30 @@
 #!/usr/bin/env bash
 # Builds everything once, then starts postgres, mock-partner, treasury-api and
-# the submit/poll workers in the background. Logs go to .pg/logs/. Run inside
-# `nix develop`. Stop with scripts/stack-down.
+# the workers in the background. Logs go to .pg/logs/. Stop with scripts/stack-down.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
+if ! command -v pg-start >/dev/null 2>&1; then
+  exec nix develop -c "$0" "$@"
+fi
+
 mkdir -p .pg/logs
+
+running_names=()
+for f in .pg/logs/*.pid; do
+  [ -f "$f" ] || continue
+  pid=$(cat "$f")
+  name=$(basename "$f" .pid)
+  if kill -0 "$pid" 2>/dev/null; then
+    running_names+=("$name")
+  else
+    rm -f "$f"
+  fi
+done
+if [ "${#running_names[@]}" -gt 0 ]; then
+  printf 'stack already running (%s); run scripts/stack-down first\n' "${running_names[*]}" >&2
+  exit 1
+fi
+
 pg-start
 cabal build -v0 all
 start() { # name, binary, args...
@@ -13,10 +33,41 @@ start() { # name, binary, args...
   echo $! > ".pg/logs/$name.pid"
   echo "started $name (pid $!)"
 }
+
+fail_startup() {
+  local name=$1
+  printf '%s did not become ready; last log lines:\n' "$name" >&2
+  tail -n 20 ".pg/logs/$name.log" >&2 || true
+  scripts/stack-down || true
+  exit 1
+}
+
+wait_until_ready() {
+  local name=$1
+  shift
+  for _ in $(seq 1 30); do
+    if "$@" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+  fail_startup "$name"
+}
+
 start mock-partner "$(cabal list-bin mock-partner)"
+wait_until_ready mock-partner curl -sf "localhost:9400/v1/settlements?date=$(date -u +%F)"
 start treasury-api "$(cabal list-bin treasury-api)"
-for _ in $(seq 1 30); do curl -sf localhost:8080/health >/dev/null && break; sleep 1; done
+wait_until_ready treasury-api curl -sf localhost:8080/health
 start submit-worker "$(cabal list-bin treasury-workers)" submit
 start poll-worker "$(cabal list-bin treasury-workers)" poll
+start reconcile-worker "$(cabal list-bin treasury-workers)" reconcile
+sleep 2
+for f in .pg/logs/*.pid; do
+  [ -f "$f" ] || continue
+  pid=$(cat "$f")
+  if ! kill -0 "$pid" 2>/dev/null; then
+    fail_startup "$(basename "$f" .pid)"
+  fi
+done
 curl -s localhost:8080/health; echo
-echo "api :8080  mock-partner :9400  logs in .pg/logs/"
+echo "api :8080  mock-partner :9400  workers: submit poll reconcile  logs in .pg/logs/"
