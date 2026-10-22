@@ -57,8 +57,15 @@ balance aid = do
   pure (total Credit - total Debit)
 
 -- | Split a fee between us and the partner bank (70/30).
+--
+-- Our share is rounded down to the cent and the partner gets the remainder,
+-- so the two shares always sum to exactly the fee. Computing both shares
+-- with 'percentOf' would floor twice and lose a cent whenever the fee is
+-- not a multiple of 10.
 splitFee :: Money -> (Money, Money)
-splitFee fee = (percentOf 7000 fee, percentOf 3000 fee)
+splitFee fee = (ours, fee - ours)
+  where
+    ours = percentOf 7000 fee
 
 systemAccount :: AccountKind -> Db AccountId
 systemAccount kind = do

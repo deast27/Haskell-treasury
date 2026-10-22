@@ -41,11 +41,11 @@
             if ! pg_ctl -D "$PGDATA" status >/dev/null 2>&1; then
               pg_ctl -D "$PGDATA" -l "$PGHOST/postgres.log" start >/dev/null
             fi
-            for db in treasury treasury_test; do
+            for db in treasury treasury_test treasury_core_test; do
               psql -h localhost -p 5433 -U treasury -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$db'" | grep -q 1 \
                 || createdb -h localhost -p 5433 -U treasury "$db"
             done
-            echo "postgres ready on localhost:5433 (databases: treasury, treasury_test)"
+            echo "postgres ready on localhost:5433 (databases: treasury, treasury_test, treasury_core_test)"
           '';
           pgStop = pkgs.writeShellScriptBin "pg-stop" ''
             pg_ctl -D "''${PGDATA:-$PWD/.pg/data}" stop
@@ -70,6 +70,7 @@
             shellHook = ''
               export DATABASE_URL="''${DATABASE_URL:-postgresql://treasury@localhost:5433/treasury}"
               export TEST_DATABASE_URL="''${TEST_DATABASE_URL:-postgresql://treasury@localhost:5433/treasury_test}"
+              export CORE_TEST_DATABASE_URL="''${CORE_TEST_DATABASE_URL:-postgresql://treasury@localhost:5433/treasury_core_test}"
               export PARTNER_BASE_URL="''${PARTNER_BASE_URL:-http://localhost:9400}"
             '';
           };
